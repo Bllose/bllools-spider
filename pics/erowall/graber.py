@@ -12,11 +12,20 @@ log = logging.getLogger("graber")
 # name - 文件名
 # path - 保存路径
 def download_the_img(url, name, path):
-    rsp=requests.get(url)
+    from urllib3.exceptions import IncompleteRead, ProtocolError
+    from requests.exceptions import ChunkedEncodingError
+    try:
+        rsp=requests.get(url)
+    except (IncompleteRead, ProtocolError, ChunkedEncodingError) as e:
+        try:
+            rsp=requests.get(url)
+        except (IncompleteRead, ProtocolError, ChunkedEncodingError) as e:
+            log.error('尝试下载文件{}时出现异常,跳过当前文件, 报错信息:\r\n{}'.format(name, str(e)))
+            return
     abs_file = path + '/' + name
-    log.info('保存图片：{}'.format(abs_file))
+    log.info('保存图片: {}'.format(abs_file))
     with open(abs_file, 'wb') as f:
-        f.write(rsp.content)
+            f.write(rsp.content)
 
 
 def get_file_name(path) -> Tuple[str, str]:
@@ -81,23 +90,35 @@ def get_the_max_page_number(html_content) -> int:
     return max_page
 
 
-# log.info("接受到{}个参数, 参数列表: {}".format(len(sys.argv), str(sys.argv)))
+def main():
+    argv_size = len(sys.argv)
 
-if len(sys.argv) == 3:
-    size = sys.argv[1]
-    dir = sys.argv[2]
-    size_list = ['2560x1440', '1600x900', '2560x1600', '1920x1200', '1680x1050', '1440x900', '1280x800']
-    if size not in size_list:
-        log.error('指定的图片大小不存在, 请总下列大小中选择! \r\n {}'.format(str(size_list)))
-    elif not os.path.isdir(dir):
-        log.error('请输入正确的保存路径!')
+    if argv_size >= 3:
+        size = sys.argv[1]
+        dir = sys.argv[2]
+        size_list = ['2560x1440', '1600x900', '2560x1600', '1920x1200', '1680x1050', '1440x900', '1280x800']
+        if size not in size_list:
+            log.error('指定的图片大小不存在, 请总下列大小中选择! \r\n {}'.format(str(size_list)))
+        elif not os.path.isdir(dir):
+            log.error('请输入正确的保存路径!')
+        else:
+            response = requests.get('https://erowall.com/')
+            max_page = get_the_max_page_number(response.content)
+
+            if argv_size > 3:
+                cur_page = int(sys.argv[3])
+
+                for cur in range(cur_page, max_page):
+                    cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
+                    download_each_page(cur_rsp.content, size, dir)
+            else:
+                download_each_page(response.content, size, dir)
+                for cur in range(2, max_page):
+                    cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
+                    download_each_page(cur_rsp.content, size, dir)           
     else:
-        response = requests.get('https://erowall.com/')
-        max_page = get_the_max_page_number(response.content)
-        download_each_page(response.content, size, dir)
+        log.info("请指定图片大小和保存路径, 比如: graber 2560x1440 D:/temp")    
 
-        for cur in range(2, max_page):
-            cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
-            download_each_page(cur_rsp.content, size, dir)           
-else:
-    log.info("请指定图片大小和保存路径, 比如: graber 2560x1440 D:/temp")    
+
+if __name__ == "__main__":
+    main()
