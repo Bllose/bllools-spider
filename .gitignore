@@ -1,10 +1,11 @@
 
 *.exe
 *.spec
+!graber.exe
 
 # 忽略源，手动更新
 /sources
 
 /pics/erowall/__pycache__
 /pics/erowall/build
-/pics/erowall/dist
+/pics/erowall/dist/graber
