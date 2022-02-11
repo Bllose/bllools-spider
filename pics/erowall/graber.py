@@ -1,7 +1,11 @@
+import imp
 import requests, os, sys
 from bs4 import BeautifulSoup
 import logging
 from typing import Tuple
+from urllib3.exceptions import IncompleteRead, ProtocolError, MaxRetryError
+from requests.exceptions import ChunkedEncodingError, SSLError
+from ssl import SSLEOFError
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("graber")
@@ -12,8 +16,6 @@ log = logging.getLogger("graber")
 # name - 文件名
 # path - 保存路径
 def download_the_img(url, name, path):
-    from urllib3.exceptions import IncompleteRead, ProtocolError
-    from requests.exceptions import ChunkedEncodingError
     try:
         rsp=requests.get(url)
     except (IncompleteRead, ProtocolError, ChunkedEncodingError) as e:
@@ -55,8 +57,8 @@ def download_each_page(html_content, size, dir):
             counter += 1
             log.info('尝试下载第{}张图片: {}'.format(counter, path))
             url = 'https://erowall.com' + path
-            # print(url) # https://erowall.com/w/33954/
-            response_cur = requests.get(url)
+            # print(url) # https://erowall.com/w/33954/                     
+            response_cur = requests.get(url)            
             soup_cur = BeautifulSoup(response_cur.text, 'html.parser')
             for link_cur in soup_cur.find_all('a'):
                 path_cur = link_cur.get('href')
@@ -102,20 +104,30 @@ def main():
         elif not os.path.isdir(dir):
             log.error('请输入正确的保存路径!')
         else:
-            response = requests.get('https://erowall.com/')
-            max_page = get_the_max_page_number(response.content)
+            try:
+                response = requests.get('https://erowall.com/')
+                max_page = get_the_max_page_number(response.content)
 
-            if argv_size > 3:
-                cur_page = int(sys.argv[3])
+                if argv_size > 3:
+                    cur_page = int(sys.argv[3])
 
-                for cur in range(cur_page, max_page):
-                    cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
-                    download_each_page(cur_rsp.content, size, dir)
-            else:
-                download_each_page(response.content, size, dir)
-                for cur in range(2, max_page):
-                    cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
-                    download_each_page(cur_rsp.content, size, dir)           
+                    for cur in range(cur_page, max_page):
+                        cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
+                        log.info("开始第{}页下载".format(cur))
+                        download_each_page(cur_rsp.content, size, dir)
+                else:
+                    download_each_page(response.content, size, dir)
+                    for cur in range(2, max_page):
+                        log.info("开始第{}页下载".format(cur))
+                        cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
+                        download_each_page(cur_rsp.content, size, dir)   
+            except (IncompleteRead, ProtocolError, ChunkedEncodingError) as e:
+                log.error("请求异常结束!")
+                return 
+            except (MaxRetryError, SSLError, SSLEOFError) as e:
+                log.error("不支持代理,请关闭代理后重试.")
+                return
+
     else:
         log.info("请指定图片大小和保存路径, 比如: graber 2560x1440 D:/temp")    
 
