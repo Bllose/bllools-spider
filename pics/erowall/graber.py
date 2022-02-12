@@ -1,26 +1,46 @@
 import imp
 import requests, os, sys
+from requests.models import Response
 from bs4 import BeautifulSoup
 import logging
 from typing import Tuple
 from urllib3.exceptions import IncompleteRead, ProtocolError, MaxRetryError
-from requests.exceptions import ChunkedEncodingError, SSLError
+from requests.exceptions import ChunkedEncodingError, SSLError, ConnectionError
 from ssl import SSLEOFError
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("graber")
 
+proxy = {
+        'http':'127.0.0.1:63571',
+        'https':'127.0.0.1:63571'
+        }
 
+use_proxy = False
+
+def set_proxy(host, port=None) -> None:
+    if port:
+        proxy['http'] = host + ':' + port
+        proxy['https'] = host + ':' + port
+    else:
+        proxy['http'] = host
+        proxy['https'] = host
+
+def GET(url) -> Response:
+    if use_proxy:
+        return requests.get(url, proxies=proxy)
+    else:
+        return requests.get(url)
 
 # url - 下载地址
 # name - 文件名
 # path - 保存路径
 def download_the_img(url, name, path):
     try:
-        rsp=requests.get(url)
+        rsp=GET(url)
     except (IncompleteRead, ProtocolError, ChunkedEncodingError) as e:
         try:
-            rsp=requests.get(url)
+            rsp=GET(url)
         except (IncompleteRead, ProtocolError, ChunkedEncodingError) as e:
             log.error('尝试下载文件{}时出现异常,跳过当前文件, 报错信息:\r\n{}'.format(name, str(e)))
             return
@@ -58,7 +78,7 @@ def download_each_page(html_content, size, dir):
             log.info('尝试下载第{}张图片: {}'.format(counter, path))
             url = 'https://erowall.com' + path
             # print(url) # https://erowall.com/w/33954/                     
-            response_cur = requests.get(url)            
+            response_cur = GET(url)           
             soup_cur = BeautifulSoup(response_cur.text, 'html.parser')
             for link_cur in soup_cur.find_all('a'):
                 path_cur = link_cur.get('href')
@@ -104,28 +124,37 @@ def main():
         elif not os.path.isdir(dir):
             log.error('请输入正确的保存路径!')
         else:
+            if argv_size > 4:
+                global use_proxy
+                use_proxy = True
+                set_proxy(sys.argv[4])
+                log.info("使用代理{}".format(sys.argv[4]))
+
             try:
-                response = requests.get('https://erowall.com/')
+                response = GET('https://erowall.com/')
                 max_page = get_the_max_page_number(response.content)
 
                 if argv_size > 3:
                     cur_page = int(sys.argv[3])
 
                     for cur in range(cur_page, max_page):
-                        cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
+                        cur_rsp = GET('https://erowall.com/dat/page/'+str(cur))
                         log.info("开始第{}页下载".format(cur))
                         download_each_page(cur_rsp.content, size, dir)
                 else:
                     download_each_page(response.content, size, dir)
                     for cur in range(2, max_page):
                         log.info("开始第{}页下载".format(cur))
-                        cur_rsp = requests.get('https://erowall.com/dat/page/'+str(cur))
+                        cur_rsp = GET('https://erowall.com/dat/page/'+str(cur))
                         download_each_page(cur_rsp.content, size, dir)   
-            except (IncompleteRead, ProtocolError, ChunkedEncodingError) as e:
+            except (IncompleteRead, ChunkedEncodingError) as e:
                 log.error("请求异常结束!")
                 return 
             except (MaxRetryError, SSLError, SSLEOFError) as e:
-                log.error("不支持代理,请关闭代理后重试.")
+                log.error("不支持代理,请关闭代理后重试.",exc_info=True)
+                return
+            except (ConnectionError, ProtocolError) as e:
+                log.error("网络不通, 需要科学上网")
                 return
 
     else:
