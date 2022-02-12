@@ -1,4 +1,13 @@
-import imp
+# import sys
+# from os.path import abspath, join, dirname
+# sys.path.insert(0, join(abspath(dirname(__file__)), '..'))
+# print(sys.path)
+
+import click
+# from common import func
+# from pics.erowall import graber
+
+
 import requests, os, sys
 from requests.models import Response
 from bs4 import BeautifulSoup
@@ -146,56 +155,26 @@ def main_entry(size, dir, proxy, cur_page = 1):
             log.error("不支持代理,请关闭代理后重试.")
         except (ConnectionError, ProtocolError) as e:
             log.error("网络不通, 需要科学上网")
-     
-
-def main():
-    argv_size = len(sys.argv)
-
-    if argv_size >= 3:
-        size = sys.argv[1]
-        dir = sys.argv[2]
-        
-        if size not in size_list:
-            log.error('指定的图片大小不存在, 请总下列大小中选择! \r\n {}'.format(str(size_list)))
-        elif not os.path.isdir(dir):
-            log.error('请输入正确的保存路径!')
-        else:
-            if argv_size > 4:
-                global use_proxy
-                use_proxy = True
-                set_proxy(sys.argv[4])
-                log.info("使用代理{}".format(sys.argv[4]))
-
-            try:
-                response = GET('https://erowall.com/')
-                max_page = get_the_max_page_number(response.content)
-
-                if argv_size > 3:
-                    cur_page = int(sys.argv[3])
-
-                    for cur in range(cur_page, max_page):
-                        cur_rsp = GET('https://erowall.com/dat/page/'+str(cur))
-                        log.info("开始第{}页下载".format(cur))
-                        download_each_page(cur_rsp.content, size, dir)
-                else:
-                    download_each_page(response.content, size, dir)
-                    for cur in range(2, max_page):
-                        log.info("开始第{}页下载".format(cur))
-                        cur_rsp = GET('https://erowall.com/dat/page/'+str(cur))
-                        download_each_page(cur_rsp.content, size, dir)   
-            except (IncompleteRead, ChunkedEncodingError) as e:
-                log.error("请求异常结束!")
-                return 
-            except (MaxRetryError, SSLError, SSLEOFError) as e:
-                log.error("不支持代理,请关闭代理后重试.",exc_info=True)
-                return
-            except (ConnectionError, ProtocolError) as e:
-                log.error("网络不通, 需要科学上网")
-                return
-
-    else:
-        log.info("请指定图片大小和保存路径, 比如: graber 2560x1440 D:/temp")    
+       
 
 
-if __name__ == "__main__":
-    main()
+@click.group()
+def cli() -> None:
+    pass
+
+
+@click.command("erowall", short_help="爬它的壁纸")
+# @click.option('--level', default='INFO', help='过程中日志级别, 默认是 INFO')
+@click.option('--size', default='2560x1440', help='下载壁纸大小')
+@click.option('--dir', default='/temp', help='下载后保存路径')
+@click.option('--proxy', default = '', help='使用的代理地址')
+@click.option('--cur', default=1, help='从第几页开始下载')
+def spiter_erowall_wallpaper(size, dir, proxy, cur):
+    # logLevel = func.getLevel(level)
+    main_entry(size, dir, proxy, cur_page=cur)
+
+
+cli.add_command(spiter_erowall_wallpaper)
+
+if __name__ == '__main__':
+    spiter_erowall_wallpaper()
