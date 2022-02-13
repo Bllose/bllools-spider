@@ -143,7 +143,7 @@ def main_entry(size, dir, proxy, cur_page = 1):
         except (IncompleteRead, ChunkedEncodingError) as e:
             log.error("请求异常结束!")
         except (MaxRetryError, SSLError, SSLEOFError) as e:
-            log.error("不支持代理,请关闭代理后重试.")
+            log.error("不支持操作系统默认代理,请通过 --proxy 你的代理地址 正确使用代理功能")
         except (ConnectionError, ProtocolError) as e:
             log.error("网络不通, 需要科学上网")
      
