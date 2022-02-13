@@ -2,6 +2,7 @@
 *.exe
 *.spec
 !graber.exe
+!graber_cmd.exe
 
 # 忽略源，手动更新
 /sources
@@ -15,3 +16,4 @@
 /cmds/build
 
 /pics/erowall/dist/graber
+\cmds\dist\graber_cmd
