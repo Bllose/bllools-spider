@@ -24,7 +24,8 @@ Options:
 ERROR:graber:不支持操作系统默认代理,请通过 --proxy 你的代理地址 正确使用代理功能
 ```
 
-在window10中，打开“代理”或者“更改代理设置” 设置页面，就能看到【使用代理服务器】栏位， 下面有具体代理地址和端口。
+在window10中，打开“代理”或者“更改代理设置” 设置页面，就能看到【使用代理服务器】栏位， 下面有具体代理地址和端口。  
+![proxy_example](https://github.com/Bllose/bllools-spider/blob/main/sources/proxy_example.png)  
 然后将这个地址写入代理参数```--proxy```即可。  
 比如:  
 ```
