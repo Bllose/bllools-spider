@@ -3,7 +3,7 @@
 官方说明文档：[Using Spec Files](https://pyinstaller.readthedocs.io/en/stable/spec-files.html)  
 命令举例  
 ``` Python  
-pyinstaller --paths '/your/direction/path/bllools-spider' -F graber_cmd.py
+pyinstaller --paths /your/direction/path/bllools-spider -F graber_cmd.py
 ```  
 
 这时，pyinstaller运行时，首先会生成```.spec```文件， 文件中添加了pathx路径:  
@@ -13,7 +13,7 @@ pyinstaller --paths '/your/direction/path/bllools-spider' -F graber_cmd.py
 block_cipher = None
 
 a = Analysis(['graber_cmd.py'],
-             pathex=["'/your/direction/path/bllools-spider'"],
+             pathex=["/your/direction/path/bllools-spider"],
              binaries=[],
              datas=[],
              hiddenimports=[],
