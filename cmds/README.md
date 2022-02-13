@@ -13,7 +13,7 @@ pyinstaller --paths '/your/direction/path/bllools-spider' -F graber_cmd.py
 block_cipher = None
 
 a = Analysis(['graber_cmd.py'],
-             pathex=["'D:\\my\\path\\bllools-spider'"],
+             pathex=["'/your/direction/path/bllools-spider'"],
              binaries=[],
              datas=[],
              hiddenimports=[],
